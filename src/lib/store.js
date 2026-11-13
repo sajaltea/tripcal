@@ -399,14 +399,22 @@ function enqueue(type, tripId, label, args) {
 
 const findTrip = (id) => getSnapshot().trips.find((t) => t.id === id);
 
+const cleanEmail = (e) => (e || '').trim().toLowerCase() || null;
+
 export function createTrip({ name, currency, start_date, end_date, people }) {
   const trip = { id: newId(), owner_id: userId, name, currency, start_date, end_date, created_at: now() };
-  const members = people.map((n, i) => ({
-    id: newId(),
-    trip_id: trip.id,
-    name: n,
-    created_at: new Date(Date.now() + i).toISOString(),
-  }));
+  // people: ["Name", ...] or [{ name, email }, ...]
+  const members = people.map((p, i) => {
+    const m = {
+      id: newId(),
+      trip_id: trip.id,
+      name: typeof p === 'string' ? p : p.name,
+      created_at: new Date(Date.now() + i).toISOString(),
+    };
+    const mail = typeof p === 'string' ? null : cleanEmail(p.email);
+    if (mail) m.email = mail; // only send the column when used
+    return m;
+  });
   enqueue('createTrip', trip.id, `Create trip "${name}"`, { trip, members });
   return trip.id;
 }
@@ -415,8 +423,6 @@ export function deleteTrip(id) {
   const t = findTrip(id);
   enqueue('deleteTrip', id, `Delete trip "${t?.name ?? ''}"`, { id });
 }
-
-const cleanEmail = (e) => (e || '').trim().toLowerCase() || null;
 
 function checkMember(t, id, name, email) {
   if (name && t?.members.some((m) => m.name === name && m.id !== id)) throw new Error(`${name} is already on this trip.`);

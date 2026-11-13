@@ -11,7 +11,9 @@ import Icon from './Icon.jsx';
 const fmtD = (d) => new Date(d + 'T00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 const fmtRange = (a, b) => (b ? `${fmtD(a)} – ${fmtD(b)}` : fmtD(a));
 
-const EMPTY = { name: '', currency: 'INR', start_date: '', end_date: '', people: '' };
+const blankPerson = () => ({ name: '', email: '' });
+const EMPTY = () => ({ name: '', currency: 'INR', start_date: '', end_date: '', people: [blankPerson(), blankPerson()] });
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 function readTab() {
   try {
@@ -30,6 +32,11 @@ export default function TripsList() {
   const [showSettings, setShowSettings] = useState(false);
   const [form, setForm] = useState(EMPTY);
 
+  const setPerson = (i, k, v) =>
+    setForm({ ...form, people: form.people.map((p, j) => (j === i ? { ...p, [k]: v } : p)) });
+  const addPersonRow = () => setForm({ ...form, people: [...form.people, blankPerson()] });
+  const removePersonRow = (i) => setForm({ ...form, people: form.people.filter((_, j) => j !== i) });
+
   function setTab(t) {
     setTabState(t);
     try { sessionStorage.setItem('trips-tab', t); } catch { /* ignore */ }
@@ -42,17 +49,31 @@ export default function TripsList() {
   function submit(e) {
     e.preventDefault();
     setFormError('');
-    const names = [...new Set(form.people.split(/[,\n]/).map((s) => s.trim()).filter(Boolean))];
     if (!form.name.trim()) return setFormError('Give the trip a name.');
-    if (names.length === 0) return setFormError('Add at least one person on the trip.');
+    const people = form.people
+      .map((p) => ({ name: p.name.trim(), email: p.email.trim().toLowerCase() }))
+      .filter((p) => p.name || p.email);
+    if (people.length === 0) return setFormError('Add at least one person on the trip.');
+    const names = new Set();
+    const emails = new Set();
+    for (const p of people) {
+      if (!p.name) return setFormError(`Write a name for ${p.email}.`);
+      if (names.has(p.name)) return setFormError(`${p.name} is added twice.`);
+      names.add(p.name);
+      if (p.email) {
+        if (!EMAIL_RE.test(p.email)) return setFormError(`The email for ${p.name} does not look right.`);
+        if (emails.has(p.email)) return setFormError(`${p.email} is used twice.`);
+        emails.add(p.email);
+      }
+    }
     const id = createTrip({
       name: form.name.trim(),
       currency: form.currency.trim().toUpperCase() || 'INR',
       start_date: form.start_date || null,
       end_date: form.end_date || null,
-      people: names,
+      people,
     });
-    setForm(EMPTY);
+    setForm(EMPTY());
     setShowForm(false);
     setTab('mine');
     navigate(`/trip/${id}`);
@@ -141,10 +162,29 @@ export default function TripsList() {
             <label>Trip name
               <input required value={form.name} onChange={set('name')} placeholder="Goa 2026" />
             </label>
-            <label>People on the trip
-              <textarea rows={3} value={form.people} onChange={set('people')} placeholder="Sajal, Rahul, Priya" />
-              <span className="hint">Separate names with commas. You can add emails later in the People tab to share the trip.</span>
-            </label>
+            <div>
+              <div className="field-label">People on the trip</div>
+              <div className="people-rows">
+                {form.people.map((p, i) => (
+                  <div key={i} className="person-row">
+                    <input className="pr-name" value={p.name} onChange={(e) => setPerson(i, 'name', e.target.value)}
+                      placeholder={`Name ${i + 1}`} autoCapitalize="words" aria-label={`Person ${i + 1} name`} />
+                    <input className="pr-email" type="email" inputMode="email" autoCapitalize="none" value={p.email}
+                      onChange={(e) => setPerson(i, 'email', e.target.value)} placeholder="Email (optional)"
+                      aria-label={`Person ${i + 1} email`} />
+                    {form.people.length > 1 && (
+                      <button type="button" className="icon-btn pr-remove" onClick={() => removePersonRow(i)} aria-label={`Remove person ${i + 1}`}>
+                        <Icon name="x" size={16} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button type="button" className="btn ghost block mt-sm" onClick={addPersonRow}>
+                <Icon name="plus" size={16} /> Add person
+              </button>
+              <span className="hint">Add an email to share the trip. That person signs in with it and sees the trip under “Shared with me”.</span>
+            </div>
             <div className="grid2">
               <label>Start date
                 <input type="date" value={form.start_date} onChange={set('start_date')} />
