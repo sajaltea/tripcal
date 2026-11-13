@@ -541,3 +541,9 @@ input:focus, select:focus, textarea:focus {
   .grid2 { grid-template-columns: 1fr; }
   .hero-amount, .view-big { font-size: 26px; }
 }
+
+/* Account */
+.mb-sm { margin-bottom: 8px; }
+.account-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.pw-form { padding-top: 4px; }
+.pw-form .settings-row { border-bottom: none; padding-bottom: 2px; }
