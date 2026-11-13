@@ -18,7 +18,12 @@ export default function Auth() {
     const { data, error } =
       mode === 'signin'
         ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+        : await supabase.auth.signUp({
+            email,
+            password,
+            // The confirmation email sends people back to the site they signed up on
+            options: { emailRedirectTo: window.location.origin },
+          });
     setBusy(false);
     if (error) return setError(error.message);
     if (mode === 'signup' && !data.session) {
