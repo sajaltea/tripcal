@@ -1,0 +1,14 @@
+{
+  "name": "Trip Splitter",
+  "short_name": "Trips",
+  "description": "Track trip spending and see who owes whom. Works offline.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f6f8",
+  "theme_color": "#4f46e5",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
