@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createTrip, useStore } from '../lib/store.js';
+import { createTrip, isMine, useStore } from '../lib/store.js';
 import SettingsSheet from './SettingsSheet.jsx';
 import { hueFor } from './Avatar.jsx';
 import { formatMoney, toCents } from '../lib/money.js';
@@ -13,13 +13,31 @@ const fmtRange = (a, b) => (b ? `${fmtD(a)} – ${fmtD(b)}` : fmtD(a));
 
 const EMPTY = { name: '', currency: 'INR', start_date: '', end_date: '', people: '' };
 
+function readTab() {
+  try {
+    return sessionStorage.getItem('trips-tab') || 'mine';
+  } catch {
+    return 'mine';
+  }
+}
+
 export default function TripsList() {
   const navigate = useNavigate();
   const { trips, loaded, status } = useStore();
+  const [tab, setTabState] = useState(readTab);
   const [formError, setFormError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [form, setForm] = useState(EMPTY);
+
+  function setTab(t) {
+    setTabState(t);
+    try { sessionStorage.setItem('trips-tab', t); } catch { /* ignore */ }
+  }
+
+  const mine = trips.filter(isMine);
+  const shared = trips.filter((t) => !isMine(t));
+  const list = tab === 'mine' ? mine : shared;
 
   function submit(e) {
     e.preventDefault();
@@ -36,6 +54,7 @@ export default function TripsList() {
     });
     setForm(EMPTY);
     setShowForm(false);
+    setTab('mine');
     navigate(`/trip/${id}`);
   }
 
@@ -45,27 +64,44 @@ export default function TripsList() {
   return (
     <>
       <header className="appbar">
-        <div className="appbar-title">My trips</div>
+        <div className="appbar-title">Trips</div>
         <button className="icon-btn gear" onClick={() => setShowSettings(true)} aria-label="Settings"><Icon name="settings" /></button>
       </header>
       <SyncBar />
 
-      <main className="page with-fab">
+      <main className={tab === 'mine' ? 'page with-fab' : 'page'}>
+        <div className="seg seg-full" role="tablist">
+          <button role="tab" aria-selected={tab === 'mine'} className={tab === 'mine' ? 'on' : ''} onClick={() => setTab('mine')}>
+            My trips{mine.length ? <span className="count">{mine.length}</span> : null}
+          </button>
+          <button role="tab" aria-selected={tab === 'shared'} className={tab === 'shared' ? 'on' : ''} onClick={() => setTab('shared')}>
+            Shared with me{shared.length ? <span className="count">{shared.length}</span> : null}
+          </button>
+        </div>
+
         {status.loadError && <div className="alert error">{status.loadError}</div>}
 
         {waiting ? (
           !status.loadError && (
             <p className="muted center">{status.online ? 'Loading…' : 'You are offline. Your trips will appear once you connect the first time.'}</p>
           )
-        ) : trips.length === 0 ? (
-          <div className="empty">
-            <div className="empty-icon"><Icon name="map" size={28} /></div>
-            <p>No trips yet.</p>
-            <button className="btn primary" onClick={() => setShowForm(true)}>Create your first trip</button>
-          </div>
+        ) : list.length === 0 ? (
+          tab === 'mine' ? (
+            <div className="empty">
+              <div className="empty-icon"><Icon name="map" size={28} /></div>
+              <p>No trips yet.</p>
+              <button className="btn primary" onClick={() => setShowForm(true)}>Create your first trip</button>
+            </div>
+          ) : (
+            <div className="empty">
+              <div className="empty-icon"><Icon name="users" size={28} /></div>
+              <p>No shared trips yet.</p>
+              <p className="small muted">When a trip admin adds your email to a trip, it shows up here.</p>
+            </div>
+          )
         ) : (
           <div className="stack-sm">
-            {trips.map((t) => {
+            {list.map((t) => {
               const total = t.expenses.reduce((s, e) => s + toCents(e.amount), 0);
               return (
                 <Link key={t.id} to={`/trip/${t.id}`} className="card trip-card">
@@ -75,9 +111,10 @@ export default function TripsList() {
                       {t.name}
                       {status.pendingTrips.has(t.id) && <span className="pending-dot" title="Changes waiting to upload" />}
                     </div>
-                    <div className="muted small">
-                      {t.members.length} people
-                      {t.start_date ? ` · ${fmtRange(t.start_date, t.end_date)}` : ''}
+                    <div className="muted small item-sub">
+                      {tab === 'shared'
+                        ? `By ${t.owner_email || 'admin'}`
+                        : `${t.members.length} people${t.start_date ? ` · ${fmtRange(t.start_date, t.end_date)}` : ''}`}
                     </div>
                   </div>
                   <div className="right">
@@ -92,7 +129,7 @@ export default function TripsList() {
         )}
       </main>
 
-      {!status.loadError && (
+      {tab === 'mine' && !status.loadError && (
         <button className="fab" onClick={() => setShowForm(true)} aria-label="New trip"><Icon name="plus" size={26} stroke={2.2} /></button>
       )}
 
@@ -106,7 +143,7 @@ export default function TripsList() {
             </label>
             <label>People on the trip
               <textarea rows={3} value={form.people} onChange={set('people')} placeholder="Sajal, Rahul, Priya" />
-              <span className="hint">Separate names with commas or new lines</span>
+              <span className="hint">Separate names with commas. You can add emails later in the People tab to share the trip.</span>
             </label>
             <div className="grid2">
               <label>Start date

@@ -7,7 +7,7 @@ import Avatar from './Avatar.jsx';
 import BillImage from './BillImage.jsx';
 import Icon from './Icon.jsx';
 
-function ExpenseView({ trip, expense, nameOf, canEdit, onEdit, onDelete }) {
+function ExpenseView({ trip, expense, nameOf, canEdit, readOnly, onEdit, onDelete }) {
   const money = (c) => formatMoney(c, trip.currency);
   return (
     <div className="stack">
@@ -45,14 +45,14 @@ function ExpenseView({ trip, expense, nameOf, canEdit, onEdit, onDelete }) {
           <button className="btn" onClick={onEdit}><Icon name="edit" size={18} /> Edit</button>
           <button className="btn danger" onClick={onDelete}><Icon name="trash" size={18} /> Delete</button>
         </div>
-      ) : (
+      ) : readOnly ? null : (
         <p className="lock-note"><Icon name="lock" size={16} /> Editing is off. Turn it on in Settings.</p>
       )}
     </div>
   );
 }
 
-export default function ExpensesTab({ trip, members, expenses, nameOf }) {
+export default function ExpensesTab({ trip, members, expenses, nameOf, readOnly }) {
   const { settings } = useStore();
   const [sheet, setSheet] = useState(null); // null | { mode: 'new' } | { mode: 'view' | 'edit', expense }
 
@@ -87,7 +87,7 @@ export default function ExpensesTab({ trip, members, expenses, nameOf }) {
         <div className="empty">
           <div className="empty-icon"><Icon name="receipt" size={28} /></div>
           <p>No expenses yet.</p>
-          <button className="btn primary" onClick={() => setSheet({ mode: 'new' })}>Add the first expense</button>
+          {!readOnly && <button className="btn primary" onClick={() => setSheet({ mode: 'new' })}>Add the first expense</button>}
         </div>
       )}
 
@@ -117,7 +117,7 @@ export default function ExpensesTab({ trip, members, expenses, nameOf }) {
         </section>
       ))}
 
-      <button className="fab" onClick={() => setSheet({ mode: 'new' })} aria-label="Add expense"><Icon name="plus" size={26} stroke={2.2} /></button>
+      {!readOnly && <button className="fab" onClick={() => setSheet({ mode: 'new' })} aria-label="Add expense"><Icon name="plus" size={26} stroke={2.2} /></button>}
 
       {sheet?.mode === 'new' && (
         <Sheet title="Add expense" onClose={() => setSheet(null)}>
@@ -130,13 +130,14 @@ export default function ExpensesTab({ trip, members, expenses, nameOf }) {
             trip={trip}
             expense={current}
             nameOf={nameOf}
-            canEdit={settings.allowEdit}
+            canEdit={settings.allowEdit && !readOnly}
+            readOnly={readOnly}
             onEdit={() => setSheet({ mode: 'edit', expense: current })}
             onDelete={() => remove(current)}
           />
         </Sheet>
       )}
-      {sheet?.mode === 'edit' && current && settings.allowEdit && (
+      {sheet?.mode === 'edit' && current && settings.allowEdit && !readOnly && (
         <Sheet title="Edit expense" onClose={() => setSheet({ mode: 'view', expense: current })}>
           <ExpenseForm key={current.id} trip={trip} members={members} expense={current} onDone={() => setSheet({ mode: 'view', expense: current })} />
         </Sheet>

@@ -10,6 +10,7 @@ import { supabase } from './supabase.js';
 import { deleteBlob, getBlob, putBlob } from './bills.js';
 
 let userId = null;
+let userEmail = '';
 let server = { trips: [], loaded: false, fetchedAt: null };
 let outbox = [];
 let failed = [];
@@ -72,6 +73,11 @@ function applyOp(trips, op) {
       if (m) m.name = a.name;
       break;
     }
+    case 'updateMember': {
+      const m = tripOf(a.trip_id)?.members.find((x) => x.id === a.id);
+      if (m) Object.assign(m, a.patch);
+      break;
+    }
     case 'deleteMember': {
       const t = tripOf(a.trip_id);
       if (t) t.members = t.members.filter((m) => m.id !== a.id);
@@ -132,6 +138,7 @@ function buildSnapshot() {
     loaded: server.loaded,
     settings,
     userId,
+    userEmail,
     status: {
       online,
       syncing,
@@ -160,6 +167,11 @@ function isNetworkError(error) {
 }
 
 function friendly(error) {
+  if (/column .*email/i.test(error.message || '') || /members_trip_email_uq/.test(error.message || '')) {
+    return /members_trip_email_uq/.test(error.message || '')
+      ? 'That email is already used by another person on this trip.'
+      : 'Sharing by email is not set up yet (run supabase/sharing.sql in Supabase), then tap Retry.';
+  }
   if (/bucket not found/i.test(error.message || '')) return 'Bill photos are not set up yet (run supabase/bills.sql in Supabase), then tap Retry.';
   if (/bill_path/.test(error.message || '')) return 'Bill photos are not set up yet (run supabase/bills.sql in Supabase), then tap Retry.';
   if (error.code === '23505') return 'That name is already used on this trip.';
@@ -189,6 +201,8 @@ async function execute(op) {
       return (await supabase.from('members').upsert(a.member, ignore)).error;
     case 'renameMember':
       return (await supabase.from('members').update({ name: a.name }).eq('id', a.id)).error;
+    case 'updateMember':
+      return (await supabase.from('members').update(a.patch).eq('id', a.id)).error;
     case 'deleteMember':
       return (await supabase.from('members').delete().eq('id', a.id)).error;
     case 'saveExpense': {
@@ -323,7 +337,8 @@ function startListeners() {
   timer.unref?.();
 }
 
-export function initStore(uid) {
+export function initStore(uid, email = '') {
+  userEmail = (email || '').toLowerCase();
   if (userId === uid) return;
   userId = uid;
   server = read('server', { trips: [], loaded: false, fetchedAt: null });
@@ -385,7 +400,7 @@ function enqueue(type, tripId, label, args) {
 const findTrip = (id) => getSnapshot().trips.find((t) => t.id === id);
 
 export function createTrip({ name, currency, start_date, end_date, people }) {
-  const trip = { id: newId(), name, currency, start_date, end_date, created_at: now() };
+  const trip = { id: newId(), owner_id: userId, name, currency, start_date, end_date, created_at: now() };
   const members = people.map((n, i) => ({
     id: newId(),
     trip_id: trip.id,
@@ -401,17 +416,41 @@ export function deleteTrip(id) {
   enqueue('deleteTrip', id, `Delete trip "${t?.name ?? ''}"`, { id });
 }
 
-export function addMember(tripId, name) {
+const cleanEmail = (e) => (e || '').trim().toLowerCase() || null;
+
+function checkMember(t, id, name, email) {
+  if (name && t?.members.some((m) => m.name === name && m.id !== id)) throw new Error(`${name} is already on this trip.`);
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('That email does not look right.');
+  if (email && t?.members.some((m) => m.email && m.email.toLowerCase() === email && m.id !== id)) {
+    throw new Error('That email is already used by another person on this trip.');
+  }
+}
+
+export function addMember(tripId, name, email) {
   const t = findTrip(tripId);
-  if (t?.members.some((m) => m.name === name)) throw new Error(`${name} is already on this trip.`);
-  enqueue('addMember', tripId, `Add ${name}`, { member: { id: newId(), trip_id: tripId, name, created_at: now() } });
+  const mail = cleanEmail(email);
+  checkMember(t, null, name, mail);
+  const member = { id: newId(), trip_id: tripId, name, created_at: now() };
+  if (mail) member.email = mail; // only send the column when used
+  enqueue('addMember', tripId, `Add ${name}`, { member });
+}
+
+// patch: { name?, email? }
+export function updateMember(tripId, id, patch) {
+  const t = findTrip(tripId);
+  const clean = {};
+  if (patch.name !== undefined) clean.name = patch.name;
+  if (patch.email !== undefined) clean.email = cleanEmail(patch.email);
+  checkMember(t, id, clean.name, clean.email);
+  enqueue('updateMember', tripId, `Update ${clean.name ?? 'person'}`, { trip_id: tripId, id, patch: clean });
 }
 
 export function renameMember(tripId, id, name) {
-  const t = findTrip(tripId);
-  if (t?.members.some((m) => m.name === name && m.id !== id)) throw new Error(`${name} is already on this trip.`);
-  enqueue('renameMember', tripId, `Rename to ${name}`, { trip_id: tripId, id, name });
+  updateMember(tripId, id, { name });
 }
+
+// Is this trip owned by the signed-in user? (trips made on this phone before upload have no owner yet)
+export const isMine = (trip) => !trip.owner_id || trip.owner_id === userId;
 
 export function deleteMember(tripId, id) {
   const t = findTrip(tripId);

@@ -547,3 +547,33 @@ input:focus, select:focus, textarea:focus {
 .account-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .pw-form { padding-top: 4px; }
 .pw-form .settings-row { border-bottom: none; padding-bottom: 2px; }
+
+/* ---------- Sharing ---------- */
+.seg-full { display: flex; width: 100%; margin-bottom: 14px; }
+.seg-full button { flex: 1; padding: 7px 10px; font-size: var(--fs-md); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.count {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; display: inline-grid; place-items: center;
+  font-size: 10.5px; font-weight: 600; background: var(--surface-3); color: var(--text-2);
+}
+.seg button.on .count { background: var(--accent-soft); color: var(--accent); }
+.tag {
+  display: inline-flex; align-items: center; margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 600; background: var(--surface-3); color: var(--text-2); flex: none;
+}
+.tag.share { background: var(--accent-soft); color: var(--accent); }
+.share-note {
+  display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; margin-bottom: 14px;
+  border-radius: var(--radius); background: var(--accent-soft); color: var(--accent); font-size: var(--fs-md);
+}
+.share-note .icon { margin-top: 2px; }
+.share-note strong { word-break: break-all; }
+.view-only {
+  display: inline-flex; align-items: center; gap: 5px; margin-bottom: 10px; padding: 3px 8px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent); font-size: var(--fs-xs); font-weight: 600;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.section-title.flush { margin: 0; }
+.row-btn {
+  display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; padding: 0; border: none;
+  background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer;
+}

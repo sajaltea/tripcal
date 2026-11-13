@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { deleteTrip, useStore } from '../lib/store.js';
+import { deleteTrip, isMine, useStore } from '../lib/store.js';
 import { computeBalances, formatMoney, toCents } from '../lib/money.js';
 import ExpensesTab from './ExpensesTab.jsx';
 import PeopleTab from './PeopleTab.jsx';
@@ -22,7 +22,7 @@ const TABS = [
 export default function TripPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { trips, loaded } = useStore();
+  const { trips, loaded, userEmail } = useStore();
   const [error, setError] = useState('');
   const [tab, setTab] = useState('Expenses');
   const [showSettings, setShowSettings] = useState(false);
@@ -72,7 +72,9 @@ export default function TripPage() {
   const total = expenses.reduce((s, e) => s + toCents(e.amount), 0);
   const nameOf = (mid) => members.find((m) => m.id === mid)?.name ?? 'Unknown';
   const openHistory = (pid) => { setHistoryPerson(pid); changeTab('History'); };
-  const shared = { trip, members, expenses, payments, balances, nameOf, setError, deleteTrip: removeTrip, openHistory };
+  const readOnly = !isMine(trip);
+  const meId = members.find((m) => m.email && userEmail && m.email.toLowerCase() === userEmail)?.id ?? null;
+  const shared = { trip, members, expenses, payments, balances, nameOf, setError, deleteTrip: removeTrip, openHistory, readOnly, meId };
 
   return (
     <>
@@ -85,6 +87,11 @@ export default function TripPage() {
 
       {tab === 'Expenses' && (
         <section className="hero">
+          {readOnly && (
+            <div className="view-only">
+              <Icon name="users" size={13} /> Shared by {trip.owner_email || 'the admin'} · View only
+            </div>
+          )}
           <div className="hero-top">
             <span className="hero-label">Total spent</span>
             {trip.start_date && (

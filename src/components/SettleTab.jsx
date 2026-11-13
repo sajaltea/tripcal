@@ -6,7 +6,7 @@ import Sheet from './Sheet.jsx';
 import Icon from './Icon.jsx';
 
 // "Settle up": who pays whom (with one-tap "Paid"), then each person's final amount.
-export default function SettleTab({ trip, members, expenses, balances, nameOf, openHistory }) {
+export default function SettleTab({ trip, members, expenses, balances, nameOf, openHistory, readOnly, meId }) {
   const [copied, setCopied] = useState(false);
   const [showPay, setShowPay] = useState(false);
   const [form, setForm] = useState({ from: members[0]?.id ?? '', to: members[1]?.id ?? '', amount: '', paid_on: today(), note: '' });
@@ -92,13 +92,13 @@ export default function SettleTab({ trip, members, expenses, balances, nameOf, o
                 <span className="item-title">{nameOf(s.from)} pays {nameOf(s.to)}</span>
                 <span className="amount owe">{money(s.cents)}</span>
               </span>
-              <button className="btn small" onClick={() => markPaid(s)}>Paid</button>
+              {!readOnly && <button className="btn small" onClick={() => markPaid(s)}>Paid</button>}
             </div>
           ))}
         </div>
       )}
 
-      {members.length >= 2 && (
+      {members.length >= 2 && !readOnly && (
         <button className="btn ghost block mb" onClick={() => { setFormError(''); setShowPay(true); }}>
           <Icon name="plus" size={18} /> Record another payment
         </button>
@@ -114,7 +114,10 @@ export default function SettleTab({ trip, members, expenses, balances, nameOf, o
               <div className="final-top">
                 <Avatar name={b.member.name} />
                 <span className="grow">
-                  <span className="item-title">{b.member.name}</span>
+                  <span className="item-title">
+                    {b.member.name}
+                    {b.member.id === meId && <span className="tag">You</span>}
+                  </span>
                   <span className={`status-pill ${kind}`}>
                     {kind === 'pay' ? 'Needs to pay' : kind === 'get' ? 'Will receive' : 'All settled'}
                   </span>

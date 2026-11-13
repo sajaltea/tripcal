@@ -4,7 +4,7 @@ import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 
 // Every expense and payment in time order. Pick a person to see how each one changed their balance.
-export default function HistoryTab({ trip, members, expenses, payments, nameOf, person, setPerson }) {
+export default function HistoryTab({ trip, members, expenses, payments, nameOf, person, setPerson, readOnly, meId }) {
   const { settings } = useStore();
   const money = (c) => formatMoney(c, trip.currency);
   const signed = (c) => (c > 0 ? `+${money(c)}` : c < 0 ? `−${money(-c)}` : money(0));
@@ -67,7 +67,7 @@ export default function HistoryTab({ trip, members, expenses, payments, nameOf, 
         <button className={!person ? 'filter on' : 'filter'} onClick={() => setPerson(null)}>Everyone</button>
         {members.map((m) => (
           <button key={m.id} className={person === m.id ? 'filter on' : 'filter'} onClick={() => setPerson(m.id)}>
-            {m.name}
+            {m.id === meId ? `${m.name} (you)` : m.name}
           </button>
         ))}
       </div>
@@ -134,7 +134,7 @@ export default function HistoryTab({ trip, members, expenses, payments, nameOf, 
                   ) : (
                     <span className="amount">{money(amount)}</span>
                   )}
-                  {!isExp && settings.allowEdit && (
+                  {!isExp && settings.allowEdit && !readOnly && (
                     <button className="icon-btn danger-text" onClick={() => removePayment(r.p)} aria-label="Delete payment">
                       <Icon name="trash" size={18} />
                     </button>

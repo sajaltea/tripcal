@@ -18,9 +18,10 @@ export default function App() {
   }, []);
 
   const userId = session?.user?.id;
+  const userEmail = session?.user?.email;
   useEffect(() => {
-    if (userId) initStore(userId);
-  }, [userId]);
+    if (userId) initStore(userId, userEmail);
+  }, [userId, userEmail]);
 
   if (!isConfigured) {
     return (
