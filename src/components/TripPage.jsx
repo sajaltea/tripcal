@@ -85,17 +85,19 @@ export default function TripPage() {
 
       {tab === 'Expenses' && (
         <section className="hero">
-          <div className="hero-label">Total spent</div>
+          <div className="hero-top">
+            <span className="hero-label">Total spent</span>
+            {trip.start_date && (
+              <span className="hero-dates">
+                <Icon name="calendar" size={13} /> {fmtDate(trip.start_date)}{trip.end_date ? ` – ${fmtDate(trip.end_date)}` : ''}
+              </span>
+            )}
+          </div>
           <div className="hero-amount">{formatMoney(total, trip.currency)}</div>
-          {trip.start_date && (
-            <div className="hero-dates">
-              <Icon name="calendar" size={15} /> {fmtDate(trip.start_date)}{trip.end_date ? ` – ${fmtDate(trip.end_date)}` : ''}
-            </div>
-          )}
           <div className="hero-stats">
-            <div><strong>{members.length}</strong><span>People</span></div>
-            <div><strong>{expenses.length}</strong><span>Expenses</span></div>
-            <div><strong>{formatMoney(Math.round(total / Math.max(1, members.length)), trip.currency)}</strong><span>Per person</span></div>
+            <div><span>People</span><strong>{members.length}</strong></div>
+            <div><span>Expenses</span><strong>{expenses.length}</strong></div>
+            <div><span>Per person</span><strong>{formatMoney(Math.round(total / Math.max(1, members.length)), trip.currency)}</strong></div>
           </div>
         </section>
       )}
