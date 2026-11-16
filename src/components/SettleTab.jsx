@@ -4,10 +4,13 @@ import { centsToAmount, formatMoney, suggestSettlements, toCents, today } from '
 import Avatar from './Avatar.jsx';
 import Sheet from './Sheet.jsx';
 import Icon from './Icon.jsx';
+import { buildTransferPdf, sharePdf } from '../lib/pdf.js';
 
 // "Settle up": who pays whom (with one-tap "Paid"), then each person's final amount.
-export default function SettleTab({ trip, members, expenses, balances, nameOf, openHistory, readOnly, meId }) {
+export default function SettleTab({ trip, members, expenses, payments, balances, nameOf, openHistory, readOnly, meId }) {
   const [copied, setCopied] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(null); // index of the row being turned into a PDF
+  const [pdfError, setPdfError] = useState('');
   const [showPay, setShowPay] = useState(false);
   const [form, setForm] = useState({ from: members[0]?.id ?? '', to: members[1]?.id ?? '', amount: '', paid_on: today(), note: '' });
   const [formError, setFormError] = useState('');
@@ -26,6 +29,22 @@ export default function SettleTab({ trip, members, expenses, balances, nameOf, o
 
   function pay(from, to, cents, paid_on = today(), note = null) {
     queuePayment({ trip_id: trip.id, from_member: from, to_member: to, amount: centsToAmount(cents), paid_on, note });
+  }
+
+  async function sharePdfFor(s, i) {
+    setPdfError('');
+    setPdfBusy(i);
+    try {
+      const pdf = await buildTransferPdf({ trip, expenses, payments, balances, plan, transfer: s, nameOf });
+      await sharePdf(pdf, {
+        title: `${trip.name}: ${nameOf(s.from)} pays ${nameOf(s.to)}`,
+        text: `${nameOf(s.from)} pays ${nameOf(s.to)} ${money(s.cents)} for ${trip.name}`,
+      });
+    } catch (err) {
+      setPdfError(`Could not create the PDF: ${err.message}`);
+    } finally {
+      setPdfBusy(null);
+    }
   }
 
   function markPaid(s) {
@@ -77,6 +96,8 @@ export default function SettleTab({ trip, members, expenses, balances, nameOf, o
         </button>
       </div>
 
+      {pdfError && <div className="alert error">{pdfError}</div>}
+
       {plan.length === 0 ? (
         <div className="settled"><Icon name="check" size={18} /> Everyone is settled up</div>
       ) : (
@@ -92,6 +113,10 @@ export default function SettleTab({ trip, members, expenses, balances, nameOf, o
                 <span className="item-title">{nameOf(s.from)} pays {nameOf(s.to)}</span>
                 <span className="amount owe">{money(s.cents)}</span>
               </span>
+              <button className="icon-btn" onClick={() => sharePdfFor(s, i)} disabled={pdfBusy !== null}
+                aria-label={`Share PDF: ${nameOf(s.from)} pays ${nameOf(s.to)}`} title="Share as PDF">
+                {pdfBusy === i ? <span className="spinner" /> : <Icon name="share" size={18} />}
+              </button>
               {!readOnly && <button className="btn small" onClick={() => markPaid(s)}>Paid</button>}
             </div>
           ))}

@@ -14,5 +14,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 // Save the app on the phone so it opens without network (only in the built/hosted version).
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    // Load the PDF tools once while online, so the service worker keeps them for offline PDF sharing.
+    setTimeout(() => {
+      if (navigator.onLine) Promise.all([import('jspdf'), import('jspdf-autotable')]).catch(() => {});
+    }, 8000);
+  });
 }

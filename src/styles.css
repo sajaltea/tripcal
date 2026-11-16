@@ -591,3 +591,12 @@ input:focus, select:focus, textarea:focus {
   .person-row .pr-email { grid-column: 1; grid-row: 2; }
   .person-row .pr-remove { grid-column: 2; grid-row: 1 / span 2; }
 }
+
+/* Small loading spinner (PDF share) */
+.spinner {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--surface-3); border-top-color: var(--accent);
+  animation: spin 0.7s linear infinite; display: block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.transfer .icon-btn { width: 36px; height: 36px; }
