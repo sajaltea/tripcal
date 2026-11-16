@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '../lib/supabase.js';
 import { Link, useNavigate } from 'react-router-dom';
 import { createTrip, isMine, useStore } from '../lib/store.js';
 import SettingsSheet from './SettingsSheet.jsx';
@@ -16,7 +17,7 @@ const blankPerson = () => ({ name: '', email: '' });
 // The creator is always the first person on a new trip (the admin).
 function myName(email) {
   try {
-    const saved = localStorage.getItem('trip-splitter:my-name');
+    const saved = email ? localStorage.getItem(`trip-splitter:my-name:${email}`) : null;
     if (saved) return saved;
   } catch { /* ignore */ }
   const local = (email || '').split('@')[0].replace(/[._\d-]+/g, ' ').trim();
@@ -44,6 +45,18 @@ export default function TripsList() {
   const [showForm, setShowForm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [form, setForm] = useState(() => EMPTY(userEmail));
+
+  // Fill in the signed-in user as the first person each time the form opens
+  async function openForm() {
+    let email = userEmail;
+    if (!email) {
+      const { data } = await supabase.auth.getSession();
+      email = data.session?.user?.email?.toLowerCase() ?? '';
+    }
+    setFormError('');
+    setForm(EMPTY(email));
+    setShowForm(true);
+  }
 
   const setPerson = (i, k, v) =>
     setForm({ ...form, people: form.people.map((p, j) => (j === i ? { ...p, [k]: v } : p)) });
@@ -86,7 +99,7 @@ export default function TripsList() {
       end_date: form.end_date || null,
       people,
     });
-    try { localStorage.setItem('trip-splitter:my-name', people[0]?.name || ''); } catch { /* ignore */ }
+    try { if (people[0]?.name && people[0]?.email) localStorage.setItem(`trip-splitter:my-name:${people[0].email}`, people[0].name); } catch { /* ignore */ }
     setForm(EMPTY(userEmail));
     setShowForm(false);
     setTab('mine');
@@ -125,7 +138,7 @@ export default function TripsList() {
             <div className="empty">
               <div className="empty-icon"><Icon name="map" size={28} /></div>
               <p>No trips yet.</p>
-              <button className="btn primary" onClick={() => setShowForm(true)}>Create your first trip</button>
+              <button className="btn primary" onClick={openForm}>Create your first trip</button>
             </div>
           ) : (
             <div className="empty">
@@ -165,7 +178,7 @@ export default function TripsList() {
       </main>
 
       {tab === 'mine' && !status.loadError && (
-        <button className="fab" onClick={() => setShowForm(true)} aria-label="New trip"><Icon name="plus" size={26} stroke={2.2} /></button>
+        <button className="fab" onClick={openForm} aria-label="New trip"><Icon name="plus" size={26} stroke={2.2} /></button>
       )}
 
       {showSettings && <SettingsSheet onClose={() => setShowSettings(false)} />}
