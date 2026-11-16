@@ -167,7 +167,8 @@ function isNetworkError(error) {
 }
 
 function friendly(error) {
-  if (/column .*email/i.test(error.message || '') || /members_trip_email_uq/.test(error.message || '')) {
+  // e.g. "Could not find the 'email' column of 'members'" or "column members.email does not exist"
+  if (/'?email'? column|column .*email|owner_email/i.test(error.message || '') || /members_trip_email_uq/.test(error.message || '')) {
     return /members_trip_email_uq/.test(error.message || '')
       ? 'That email is already used by another person on this trip.'
       : 'Sharing by email is not set up yet (run supabase/sharing.sql in Supabase), then tap Retry.';
