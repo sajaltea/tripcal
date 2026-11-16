@@ -104,12 +104,6 @@ export default function TripPage() {
           <div className="hero-stats">
             <div><span>People</span><strong>{members.length}</strong></div>
             <div><span>Expenses</span><strong>{expenses.length}</strong></div>
-            {meId ? (
-              // Real share from each expense's split (not total ÷ people, since splits are not always equal)
-              <div><span>Your share</span><strong>{formatMoney(balances.find((b) => b.member.id === meId)?.share ?? 0, trip.currency)}</strong></div>
-            ) : (
-              <div><span>Left to settle</span><strong>{formatMoney(balances.reduce((s, b) => s + (b.net < 0 ? -b.net : 0), 0), trip.currency)}</strong></div>
-            )}
           </div>
         </section>
       )}
