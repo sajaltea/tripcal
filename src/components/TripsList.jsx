@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createTrip, isMine, useStore } from '../lib/store.js';
 import SettingsSheet from './SettingsSheet.jsx';
-import { hueFor } from './Avatar.jsx';
+import Avatar, { hueFor } from './Avatar.jsx';
 import { formatMoney, toCents } from '../lib/money.js';
 import Sheet from './Sheet.jsx';
 import SyncBar from './SyncBar.jsx';
@@ -179,22 +179,31 @@ export default function TripsList() {
             <div>
               <div className="field-label">People on the trip</div>
               <div className="people-rows">
-                {form.people.map((p, i) => (
-                  <div key={i} className="person-row">
-                    <input className="pr-name" value={p.name} onChange={(e) => setPerson(i, 'name', e.target.value)}
-                      placeholder={`Name ${i + 1}`} autoCapitalize="words" aria-label={`Person ${i + 1} name`} />
-                    <input className="pr-email" type="email" inputMode="email" autoCapitalize="none" value={p.email}
-                      onChange={(e) => setPerson(i, 'email', e.target.value)} placeholder="Email (optional)"
-                      aria-label={`Person ${i + 1} email`} readOnly={p.admin} title={p.admin ? 'Your email (trip admin)' : undefined} />
-                    {p.admin ? (
-                      <span className="tag admin pr-remove" title="You created this trip">Admin</span>
-                    ) : form.people.length > 1 && (
+                {form.people.map((p, i) =>
+                  p.admin ? (
+                    // The creator: shown as a card, email fixed
+                    <div key={i} className="admin-row">
+                      <Avatar name={p.name || p.email} />
+                      <div className="grow">
+                        <input className="admin-name" value={p.name} onChange={(e) => setPerson(i, 'name', e.target.value)}
+                          placeholder="Your name" autoCapitalize="words" aria-label="Your name" />
+                        <div className="admin-email">{p.email}</div>
+                      </div>
+                      <span className="tag admin">Admin</span>
+                    </div>
+                  ) : (
+                    <div key={i} className="person-row">
+                      <input className="pr-name" value={p.name} onChange={(e) => setPerson(i, 'name', e.target.value)}
+                        placeholder="Name" autoCapitalize="words" aria-label={`Person ${i + 1} name`} />
+                      <input className="pr-email" type="email" inputMode="email" autoCapitalize="none" value={p.email}
+                        onChange={(e) => setPerson(i, 'email', e.target.value)} placeholder="Email (optional)"
+                        aria-label={`Person ${i + 1} email`} />
                       <button type="button" className="icon-btn pr-remove" onClick={() => removePersonRow(i)} aria-label={`Remove person ${i + 1}`}>
                         <Icon name="x" size={16} />
                       </button>
-                    )}
-                  </div>
-                ))}
+                    </div>
+                  )
+                )}
               </div>
               <button type="button" className="btn ghost block mt-sm" onClick={addPersonRow}>
                 <Icon name="plus" size={16} /> Add person

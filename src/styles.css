@@ -581,13 +581,29 @@ input:focus, select:focus, textarea:focus {
 /* New trip: one row per person */
 .people-rows { display: flex; flex-direction: column; gap: 8px; }
 .person-row {
-  display: grid; grid-template-columns: 1fr 1.3fr auto; gap: 6px; align-items: center;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 32px; gap: 8px; align-items: center;
 }
-.person-row:not(:has(.pr-remove)) { grid-template-columns: 1fr 1.3fr; }
-.person-row .pr-remove { width: 32px; height: 32px; color: var(--muted); }
+.person-row input { min-height: 42px; padding: 8px 12px; }
+.person-row .pr-remove { width: 32px; height: 32px; border-radius: 8px; color: var(--muted); }
+.person-row .pr-remove:hover { background: var(--surface-2); color: var(--red); }
+
+/* The creator's row */
+.admin-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2);
+}
+.admin-row .avatar { width: 36px; height: 36px; }
+.admin-name {
+  min-height: 0 !important; padding: 2px 0 !important; border: none !important; border-radius: 0 !important;
+  background: transparent !important; box-shadow: none !important;
+  font-size: 16px; font-weight: 600; color: var(--text);
+}
+.admin-name:focus { border-bottom: 1px solid var(--accent) !important; }
+.admin-email { font-size: var(--fs-sm); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-row .tag.admin { margin: 0; align-self: flex-start; }
+
 @media (max-width: 400px) {
-  .person-row { grid-template-columns: 1fr auto; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
-  .person-row:not(:has(.pr-remove)) { grid-template-columns: 1fr; }
+  .person-row { grid-template-columns: minmax(0, 1fr) 32px; row-gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius); }
   .person-row .pr-email { grid-column: 1; grid-row: 2; }
   .person-row .pr-remove { grid-column: 2; grid-row: 1 / span 2; }
 }
@@ -603,5 +619,3 @@ input:focus, select:focus, textarea:focus {
 
 /* Admin label */
 .tag.admin { background: var(--green-soft); color: var(--green); }
-.person-row .tag.admin { margin: 0; justify-self: center; }
-.person-row .pr-email[readonly] { background: var(--surface-2); color: var(--text-2); }
