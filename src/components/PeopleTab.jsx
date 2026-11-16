@@ -5,7 +5,7 @@ import Avatar from './Avatar.jsx';
 import Sheet from './Sheet.jsx';
 import Icon from './Icon.jsx';
 
-function EditPerson({ trip, member, canRename, onDone }) {
+function EditPerson({ trip, member, canRename, isAdmin, onDone }) {
   const [name, setName] = useState(member.name);
   const [email, setEmail] = useState(member.email ?? '');
   const [error, setError] = useState('');
@@ -17,7 +17,7 @@ function EditPerson({ trip, member, canRename, onDone }) {
     const n = name.trim();
     if (canRename && n && n !== member.name) patch.name = n;
     const mail = email.trim().toLowerCase();
-    if (mail !== (member.email ?? '')) patch.email = mail;
+    if (!isAdmin && mail !== (member.email ?? '')) patch.email = mail;
     if (!Object.keys(patch).length) return onDone();
     try {
       updateMember(trip.id, member.id, patch);
@@ -35,8 +35,12 @@ function EditPerson({ trip, member, canRename, onDone }) {
       </label>
       <label>Email <span className="hint">(to share this trip)</span>
         <input type="email" inputMode="email" autoCapitalize="none" placeholder="name@example.com"
-          value={email} onChange={(e) => setEmail(e.target.value)} />
-        <span className="hint">When {member.name} signs in with this email, they can view this trip.</span>
+          value={email} onChange={(e) => setEmail(e.target.value)} readOnly={isAdmin} />
+        <span className="hint">
+          {isAdmin
+            ? 'This is the trip admin (the person who created the trip). The admin email cannot be changed.'
+            : `When ${member.name} signs in with this email, they can view this trip.`}
+        </span>
       </label>
       {error && <div className="alert error">{error}</div>}
       <button className="btn primary block">Save</button>
@@ -44,7 +48,7 @@ function EditPerson({ trip, member, canRename, onDone }) {
   );
 }
 
-export default function PeopleTab({ trip, members, balances, setError, deleteTrip, readOnly, meId }) {
+export default function PeopleTab({ trip, members, balances, setError, deleteTrip, readOnly, meId, adminId }) {
   const { settings } = useStore();
   const canEdit = settings.allowEdit;
   const [name, setName] = useState('');
@@ -107,7 +111,11 @@ export default function PeopleTab({ trip, members, balances, setError, deleteTri
                 <span className="item-title">
                   {m.name}
                   {m.id === meId && <span className="tag">You</span>}
-                  {m.email && <span className="tag share">Can view</span>}
+                  {m.id === adminId ? (
+                    <span className="tag admin">Admin</span>
+                  ) : (
+                    m.email && <span className="tag share">Can view</span>
+                  )}
                 </span>
                 <span className="muted small item-sub">
                   {!readOnly && (m.email ? `${m.email} · ` : 'No email · ')}
@@ -120,7 +128,7 @@ export default function PeopleTab({ trip, members, balances, setError, deleteTri
           return (
             <div key={m.id} className="list-item">
               <button className="row-btn" onClick={() => setEditing(m)} aria-label={`Edit ${m.name}`}>{row}</button>
-              {canEdit ? (
+              {canEdit && m.id !== adminId ? (
                 <button className="icon-btn" onClick={() => remove(m)} aria-label={`Remove ${m.name}`}><Icon name="trash" size={18} /></button>
               ) : (
                 <span className="chev"><Icon name="chevron" size={16} /></span>
@@ -142,7 +150,7 @@ export default function PeopleTab({ trip, members, balances, setError, deleteTri
 
       {editing && (
         <Sheet title={`Edit ${editing.name}`} onClose={() => setEditing(null)}>
-          <EditPerson trip={trip} member={editing} canRename={canEdit} onDone={() => setEditing(null)} />
+          <EditPerson trip={trip} member={editing} canRename={canEdit} isAdmin={editing.id === adminId} onDone={() => setEditing(null)} />
         </Sheet>
       )}
     </>

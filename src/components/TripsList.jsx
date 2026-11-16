@@ -12,7 +12,20 @@ const fmtD = (d) => new Date(d + 'T00:00').toLocaleDateString(undefined, { day: 
 const fmtRange = (a, b) => (b ? `${fmtD(a)} – ${fmtD(b)}` : fmtD(a));
 
 const blankPerson = () => ({ name: '', email: '' });
-const EMPTY = () => ({ name: '', currency: 'INR', start_date: '', end_date: '', people: [blankPerson(), blankPerson()] });
+
+// The creator is always the first person on a new trip (the admin).
+function myName(email) {
+  try {
+    const saved = localStorage.getItem('trip-splitter:my-name');
+    if (saved) return saved;
+  } catch { /* ignore */ }
+  const local = (email || '').split('@')[0].replace(/[._\d-]+/g, ' ').trim();
+  return local ? local.replace(/\b\w/g, (c) => c.toUpperCase()) : '';
+}
+const EMPTY = (email) => ({
+  name: '', currency: 'INR', start_date: '', end_date: '',
+  people: [{ name: myName(email), email: email || '', admin: true }, blankPerson()],
+});
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 function readTab() {
@@ -25,17 +38,17 @@ function readTab() {
 
 export default function TripsList() {
   const navigate = useNavigate();
-  const { trips, loaded, status } = useStore();
+  const { trips, loaded, status, userEmail } = useStore();
   const [tab, setTabState] = useState(readTab);
   const [formError, setFormError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [form, setForm] = useState(EMPTY);
+  const [form, setForm] = useState(() => EMPTY(userEmail));
 
   const setPerson = (i, k, v) =>
     setForm({ ...form, people: form.people.map((p, j) => (j === i ? { ...p, [k]: v } : p)) });
   const addPersonRow = () => setForm({ ...form, people: [...form.people, blankPerson()] });
-  const removePersonRow = (i) => setForm({ ...form, people: form.people.filter((_, j) => j !== i) });
+  const removePersonRow = (i) => setForm({ ...form, people: form.people.filter((p, j) => j !== i || p.admin) });
 
   function setTab(t) {
     setTabState(t);
@@ -73,7 +86,8 @@ export default function TripsList() {
       end_date: form.end_date || null,
       people,
     });
-    setForm(EMPTY());
+    try { localStorage.setItem('trip-splitter:my-name', people[0]?.name || ''); } catch { /* ignore */ }
+    setForm(EMPTY(userEmail));
     setShowForm(false);
     setTab('mine');
     navigate(`/trip/${id}`);
@@ -171,8 +185,10 @@ export default function TripsList() {
                       placeholder={`Name ${i + 1}`} autoCapitalize="words" aria-label={`Person ${i + 1} name`} />
                     <input className="pr-email" type="email" inputMode="email" autoCapitalize="none" value={p.email}
                       onChange={(e) => setPerson(i, 'email', e.target.value)} placeholder="Email (optional)"
-                      aria-label={`Person ${i + 1} email`} />
-                    {form.people.length > 1 && (
+                      aria-label={`Person ${i + 1} email`} readOnly={p.admin} title={p.admin ? 'Your email (trip admin)' : undefined} />
+                    {p.admin ? (
+                      <span className="tag admin pr-remove" title="You created this trip">Admin</span>
+                    ) : form.people.length > 1 && (
                       <button type="button" className="icon-btn pr-remove" onClick={() => removePersonRow(i)} aria-label={`Remove person ${i + 1}`}>
                         <Icon name="x" size={16} />
                       </button>
@@ -183,7 +199,7 @@ export default function TripsList() {
               <button type="button" className="btn ghost block mt-sm" onClick={addPersonRow}>
                 <Icon name="plus" size={16} /> Add person
               </button>
-              <span className="hint">Add an email to share the trip. That person signs in with it and sees the trip under “Shared with me”.</span>
+              <span className="hint">You are the admin of this trip. Others with an email can view it under “Shared with me”.</span>
             </div>
             <div className="grid2">
               <label>Start date

@@ -74,7 +74,10 @@ export default function TripPage() {
   const openHistory = (pid) => { setHistoryPerson(pid); changeTab('History'); };
   const readOnly = !isMine(trip);
   const meId = members.find((m) => m.email && userEmail && m.email.toLowerCase() === userEmail)?.id ?? null;
-  const shared = { trip, members, expenses, payments, balances, nameOf, setError, deleteTrip: removeTrip, openHistory, readOnly, meId };
+  // The admin is the trip creator: matched by their email on the trip's people list
+  const adminEmail = (trip.owner_email || (readOnly ? '' : userEmail) || '').toLowerCase();
+  const adminId = members.find((m) => m.email && m.email.toLowerCase() === adminEmail)?.id ?? null;
+  const shared = { trip, members, expenses, payments, balances, nameOf, setError, deleteTrip: removeTrip, openHistory, readOnly, meId, adminId };
 
   return (
     <>

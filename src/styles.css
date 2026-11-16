@@ -600,3 +600,8 @@ input:focus, select:focus, textarea:focus {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .transfer .icon-btn { width: 36px; height: 36px; }
+
+/* Admin label */
+.tag.admin { background: var(--green-soft); color: var(--green); }
+.person-row .tag.admin { margin: 0; justify-self: center; }
+.person-row .pr-email[readonly] { background: var(--surface-2); color: var(--text-2); }
