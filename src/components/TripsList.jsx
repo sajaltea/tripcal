@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { Link, useNavigate } from 'react-router-dom';
-import { createTrip, isMine, useStore } from '../lib/store.js';
+import { createTrip, deleteTrip, isMine, useStore } from '../lib/store.js';
 import SettingsSheet from './SettingsSheet.jsx';
 import Avatar, { hueFor } from './Avatar.jsx';
 import { formatMoney, toCents } from '../lib/money.js';
@@ -47,6 +47,14 @@ export default function TripsList() {
   const [form, setForm] = useState(() => EMPTY(userEmail));
 
   // Fill in the signed-in user as the first person each time the form opens
+  function removeTrip(t) {
+    const n = t.expenses.length;
+    if (!window.confirm(`Delete "${t.name}"?
+
+This removes all ${n} expense${n === 1 ? '' : 's'}, payments, plan and photos for everyone. It cannot be undone.`)) return;
+    deleteTrip(t.id);
+  }
+
   async function openForm() {
     let email = userEmail;
     if (!email) {
@@ -152,7 +160,8 @@ export default function TripsList() {
             {list.map((t) => {
               const total = t.expenses.reduce((s, e) => s + toCents(e.amount), 0);
               return (
-                <Link key={t.id} to={`/trip/${t.id}`} className="card trip-card">
+                <div key={t.id} className="trip-card-wrap">
+                <Link to={`/trip/${t.id}`} className="card trip-card">
                   <span className="trip-tile" style={{ '--h': hueFor(t.name) }}>{t.name.trim().slice(0, 1).toUpperCase()}</span>
                   <div className="grow">
                     <div className="trip-name">
@@ -171,6 +180,12 @@ export default function TripsList() {
                   </div>
                   <span className="chev"><Icon name="chevron" size={18} /></span>
                 </Link>
+                {tab === 'mine' && (
+                  <button className="trip-delete" onClick={() => removeTrip(t)} aria-label={`Delete trip ${t.name}`} title="Delete trip">
+                    <Icon name="trash" size={16} />
+                  </button>
+                )}
+                </div>
               );
             })}
           </div>

@@ -654,3 +654,14 @@ input:focus, select:focus, textarea:focus {
 }
 .plan-view-notes { white-space: pre-wrap; font-size: var(--fs-base); color: var(--text); }
 .plan-item .row-btn { align-items: center; }
+
+/* Delete button on each of my trips */
+.trip-card-wrap { position: relative; }
+.trip-card-wrap .trip-card { padding-right: 44px; }
+.trip-delete {
+  position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
+  width: 32px; height: 32px; border-radius: 8px; border: none; background: transparent;
+  color: var(--muted); display: grid; place-items: center; cursor: pointer;
+}
+.trip-delete:hover { background: var(--red-soft); color: var(--red); }
+.trip-card-wrap .chev { display: none; }
