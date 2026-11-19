@@ -725,3 +725,11 @@ input:focus, select:focus, textarea:focus {
 
 /* People tab: let the money details wrap instead of being cut off */
 .people-sub { white-space: normal !important; }
+
+/* People tab: amounts on their own line, as small labeled values */
+.money-row { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 4px; }
+.money-row > span {
+  display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums;
+}
+.money-row em { font-style: normal; font-weight: 500; color: var(--muted); font-size: var(--fs-xs); }

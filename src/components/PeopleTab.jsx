@@ -117,11 +117,14 @@ export default function PeopleTab({ trip, members, balances, setError, deleteTri
                     m.email && <span className="tag share">Can view</span>
                   )}
                 </span>
-                <span className="muted small item-sub people-sub">
-                  {!readOnly && (m.email ? `${m.email} · ` : 'No email · ')}
-                  Spent {formatMoney(b?.paid ?? 0, trip.currency)} · Share {formatMoney(b?.share ?? 0, trip.currency)}
-                  {b?.sent ? ` · Paid back ${formatMoney(b.sent, trip.currency)}` : ''}
-                  {b?.received ? ` · Got back ${formatMoney(b.received, trip.currency)}` : ''}
+                {!readOnly && (
+                  <span className="muted small item-sub">{m.email || 'No email'}</span>
+                )}
+                <span className="money-row">
+                  <span><em>Spent</em>{formatMoney(b?.paid ?? 0, trip.currency)}</span>
+                  <span><em>Share</em>{formatMoney(b?.share ?? 0, trip.currency)}</span>
+                  {b?.sent ? <span><em>Paid back</em>{formatMoney(b.sent, trip.currency)}</span> : null}
+                  {b?.received ? <span><em>Got back</em>{formatMoney(b.received, trip.currency)}</span> : null}
                 </span>
               </span>
             </>
