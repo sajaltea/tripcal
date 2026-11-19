@@ -203,8 +203,8 @@ export default function PlanTab({ trip, readOnly }) {
                             <span className="item-title">{it.title}</span>
                             {it.notes && <span className="muted small plan-notes">{it.notes}</span>}
                           </span>
-                          {it.photo_path && <span className="plan-photo-badge"><Icon name="camera" size={14} /></span>}
                         </button>
+                        {it.photo_path && <BillImage path={it.photo_path} className="plan-thumb" compact />}
                       </div>
                     ))}
                   </div>
