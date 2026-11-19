@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { getBlob, putBlob } from '../lib/bills.js';
-import Icon from './Icon.jsx';
+import PhotoViewer from './PhotoViewer.jsx';
 
 // Shows a bill photo: from the phone if saved there, otherwise downloads it (and keeps a copy for offline).
 export default function BillImage({ path, className = 'bill-thumb' }) {
@@ -43,15 +43,10 @@ export default function BillImage({ path, className = 'bill-thumb' }) {
 
   return (
     <>
-      <button type="button" className={className} onClick={() => setFull(true)} aria-label="Open bill photo">
+      <button type="button" className={className} onClick={() => setFull(true)} aria-label="Open photo full screen">
         <img src={url} alt="Bill" />
       </button>
-      {full && (
-        <div className="photo-viewer" onClick={() => setFull(false)}>
-          <img src={url} alt="Bill" />
-          <button className="photo-close" aria-label="Close"><Icon name="x" /></button>
-        </div>
-      )}
+      {full && <PhotoViewer src={url} alt="Photo" onClose={() => setFull(false)} />}
     </>
   );
 }

@@ -665,3 +665,47 @@ input:focus, select:focus, textarea:focus {
 }
 .trip-delete:hover { background: var(--red-soft); color: var(--red); }
 .trip-card-wrap:has(.trip-delete) .chev { display: none; }
+
+/* ---------- Photos: full width in details (scroll for long bills) ---------- */
+.bill-large { max-height: none !important; position: relative; }
+.bill-large img { height: auto !important; max-height: none !important; object-fit: contain !important; }
+.bill-large::after {
+  content: 'Tap to zoom'; position: absolute; right: 8px; bottom: 8px; padding: 3px 8px; border-radius: 999px;
+  background: rgba(15, 23, 42, 0.65); color: #fff; font-size: var(--fs-xs); font-weight: 500; pointer-events: none;
+}
+
+/* ---------- Full-screen photo viewer ---------- */
+.pv {
+  position: fixed; inset: 0; z-index: 200; background: #000; display: flex; flex-direction: column;
+  animation: fade 0.15s; user-select: none; -webkit-user-select: none;
+}
+.pv-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: calc(8px + var(--safe-t)) 10px 8px; background: rgba(0, 0, 0, 0.6); z-index: 2;
+}
+.pv-zoom { display: flex; align-items: center; gap: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 999px; padding: 2px; }
+.pv-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent; color: #fff;
+  display: grid; place-items: center; cursor: pointer;
+}
+.pv-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.pv-btn:disabled { opacity: 0.35; cursor: default; background: transparent; }
+.pv-pct {
+  min-width: 56px; height: 32px; border: none; background: transparent; color: #fff; cursor: pointer;
+  font: inherit; font-size: var(--fs-md); font-weight: 600; font-variant-numeric: tabular-nums; border-radius: 999px;
+}
+.pv-spacer { width: 40px; }
+.pv-stage {
+  flex: 1; position: relative; overflow: hidden; touch-action: none; cursor: zoom-in;
+  display: flex; align-items: center; justify-content: center;
+}
+.pv-stage.zoomed { cursor: grab; }
+.pv-stage.zoomed:active { cursor: grabbing; }
+.pv-stage img {
+  width: 100%; height: 100%; object-fit: contain; transform-origin: center center;
+  will-change: transform; pointer-events: none;
+}
+.pv-hint {
+  text-align: center; color: rgba(255, 255, 255, 0.6); font-size: var(--fs-sm);
+  padding: 8px 12px calc(10px + var(--safe-b));
+}
