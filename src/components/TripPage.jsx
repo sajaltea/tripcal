@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { deleteTrip, isMine, useStore } from '../lib/store.js';
 import { computeBalances, formatMoney, toCents } from '../lib/money.js';
 import ExpensesTab from './ExpensesTab.jsx';
+import PlanTab from './PlanTab.jsx';
 import PeopleTab from './PeopleTab.jsx';
 import SettleTab from './SettleTab.jsx';
 import HistoryTab from './HistoryTab.jsx';
@@ -14,6 +15,7 @@ const fmtDate = (d) => new Date(d + 'T00:00').toLocaleDateString(undefined, { da
 
 const TABS = [
   { key: 'Expenses', label: 'Expenses', icon: 'receipt' },
+  { key: 'Plan', label: 'Plan', icon: 'calendar' },
   { key: 'Settle', label: 'Settle up', icon: 'wallet' },
   { key: 'History', label: 'History', icon: 'clock' },
   { key: 'People', label: 'People', icon: 'users' },
@@ -111,9 +113,10 @@ export default function TripPage() {
         </section>
       )}
 
-      <main className={tab === 'Expenses' ? 'page with-nav with-fab' : 'page with-nav'}>
+      <main className={tab === 'Expenses' || tab === 'Plan' ? 'page with-nav with-fab' : 'page with-nav'}>
         {error && <div className="alert error toast" onClick={() => setError('')}>{error}</div>}
         {tab === 'Expenses' && <ExpensesTab {...shared} />}
+        {tab === 'Plan' && <PlanTab {...shared} />}
         {tab === 'Settle' && <SettleTab {...shared} />}
         {tab === 'History' && <HistoryTab {...shared} person={historyPerson} setPerson={setHistoryPerson} />}
         {tab === 'People' && <PeopleTab {...shared} />}

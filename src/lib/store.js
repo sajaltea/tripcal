@@ -59,7 +59,7 @@ function applyOp(trips, op) {
   const tripOf = (id) => trips.find((t) => t.id === id);
   switch (op.type) {
     case 'createTrip':
-      if (!tripOf(a.trip.id)) trips.push({ ...a.trip, members: a.members, expenses: [], payments: [] });
+      if (!tripOf(a.trip.id)) trips.push({ ...a.trip, members: a.members, expenses: [], payments: [], plan: [] });
       break;
     case 'deleteTrip':
       return trips.filter((t) => t.id !== a.id);
@@ -103,6 +103,22 @@ function applyOp(trips, op) {
       if (t) t.payments = t.payments.filter((p) => p.id !== a.id);
       break;
     }
+    case 'addPlan': {
+      const t = tripOf(a.item.trip_id);
+      if (t) t.plan = t.plan || [];
+      if (t && !t.plan.some((x) => x.id === a.item.id)) t.plan.push(a.item);
+      break;
+    }
+    case 'updatePlan': {
+      const it = tripOf(a.trip_id)?.plan?.find((x) => x.id === a.id);
+      if (it) Object.assign(it, a.patch);
+      break;
+    }
+    case 'deletePlan': {
+      const t = tripOf(a.trip_id);
+      if (t) t.plan = (t.plan || []).filter((x) => x.id !== a.id);
+      break;
+    }
     case 'uploadBill': {
       const e = tripOf(a.trip_id)?.expenses.find((x) => x.id === a.expense_id);
       if (e) e.bill_path = a.path;
@@ -118,6 +134,8 @@ function applyOp(trips, op) {
 }
 
 function sortTrip(t) {
+  t.plan = t.plan || [];
+  t.plan.sort((a, b) => a.day.localeCompare(b.day) || (a.time || '99').localeCompare(b.time || '99') || a.created_at.localeCompare(b.created_at));
   t.members.sort((a, b) => a.created_at.localeCompare(b.created_at));
   t.expenses.sort((a, b) => b.spent_on.localeCompare(a.spent_on) || b.created_at.localeCompare(a.created_at));
   t.payments.sort((a, b) => b.paid_on.localeCompare(a.paid_on) || b.created_at.localeCompare(a.created_at));
@@ -167,6 +185,7 @@ function isNetworkError(error) {
 }
 
 function friendly(error) {
+  if (/plan_items/.test(error.message || '')) return 'Trip plan is not set up yet (run supabase/plan.sql in Supabase), then tap Retry.';
   // e.g. "Could not find the 'email' column of 'members'" or "column members.email does not exist"
   if (/'?email'? column|column .*email|owner_email/i.test(error.message || '') || /members_trip_email_uq/.test(error.message || '')) {
     return /members_trip_email_uq/.test(error.message || '')
@@ -230,6 +249,12 @@ async function execute(op) {
       }
       return null;
     }
+    case 'addPlan':
+      return (await supabase.from('plan_items').upsert(a.item, ignore)).error;
+    case 'updatePlan':
+      return (await supabase.from('plan_items').update(a.patch).eq('id', a.id)).error;
+    case 'deletePlan':
+      return (await supabase.from('plan_items').delete().eq('id', a.id)).error;
     case 'uploadBill': {
       const blob = await getBlob(a.path);
       if (!blob) return { message: 'The photo is no longer on this phone.', code: 'LOCAL' };
@@ -285,6 +310,12 @@ async function pull() {
     }
     return;
   }
+  // Trip plan (separate query: if plan.sql was not run yet, the rest still works)
+  const plan = await supabase.from('plan_items').select('*');
+  if (plan.error && isNetworkError(plan.error)) return;
+  const items = plan.error ? [] : plan.data;
+  for (const t of data) t.plan = items.filter((i) => i.trip_id === t.id);
+
   loadError = '';
   server = { trips: data, loaded: true, fetchedAt: now() };
   persist();
@@ -520,4 +551,19 @@ export async function attachBill(tripId, expenseId, blob) {
 
 export function removeBill(tripId, expenseId, path) {
   enqueue('removeBill', tripId, 'Remove bill photo', { trip_id: tripId, expense_id: expenseId, path });
+}
+
+// ---------- Trip plan (day-wise) ----------
+export function addPlanItem({ trip_id, day, time, title, notes }) {
+  const item = { id: newId(), trip_id, day, time: time || null, title, notes: notes || null, done: false, created_at: now() };
+  enqueue('addPlan', trip_id, `Add plan "${title}"`, { item });
+}
+
+// patch: { day?, time?, title?, notes?, done? }
+export function updatePlanItem(tripId, id, patch) {
+  enqueue('updatePlan', tripId, `Update plan "${patch.title ?? ''}"`.replace(' ""', ''), { trip_id: tripId, id, patch });
+}
+
+export function deletePlanItem(tripId, item) {
+  enqueue('deletePlan', tripId, `Delete plan "${item.title}"`, { trip_id: tripId, id: item.id });
 }
