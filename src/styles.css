@@ -637,7 +637,7 @@ input:focus, select:focus, textarea:focus {
 .plan-item { gap: 10px; align-items: flex-start; }
 .plan-item .row-btn { align-items: flex-start; gap: 10px; }
 .plan-item .row-btn:disabled { cursor: default; }
-.plan-item + .plan-item::before { left: 44px; }
+.plan-item + .plan-item::before { left: 46px; }
 .plan-time { flex: none; width: 58px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); padding-top: 1px; font-variant-numeric: tabular-nums; }
 .plan-notes { display: block; white-space: pre-wrap; margin-top: 2px; }
 .plan-item.done .item-title { text-decoration: line-through; color: var(--muted); }
@@ -648,3 +648,9 @@ input:focus, select:focus, textarea:focus {
 }
 .check.on { background: var(--green); border-color: var(--green); }
 .check:disabled { cursor: default; }
+.plan-photo-badge {
+  flex: none; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+  background: var(--surface-2); color: var(--text-2);
+}
+.plan-view-notes { white-space: pre-wrap; font-size: var(--fs-base); color: var(--text); }
+.plan-item .row-btn { align-items: center; }

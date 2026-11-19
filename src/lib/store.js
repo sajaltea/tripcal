@@ -114,6 +114,16 @@ function applyOp(trips, op) {
       if (it) Object.assign(it, a.patch);
       break;
     }
+    case 'uploadPlanPhoto': {
+      const it = tripOf(a.trip_id)?.plan?.find((x) => x.id === a.item_id);
+      if (it) it.photo_path = a.path;
+      break;
+    }
+    case 'removePlanPhoto': {
+      const it = tripOf(a.trip_id)?.plan?.find((x) => x.id === a.item_id);
+      if (it && it.photo_path === a.path) it.photo_path = null;
+      break;
+    }
     case 'deletePlan': {
       const t = tripOf(a.trip_id);
       if (t) t.plan = (t.plan || []).filter((x) => x.id !== a.id);
@@ -135,7 +145,7 @@ function applyOp(trips, op) {
 
 function sortTrip(t) {
   t.plan = t.plan || [];
-  t.plan.sort((a, b) => a.day.localeCompare(b.day) || (a.time || '99').localeCompare(b.time || '99') || a.created_at.localeCompare(b.created_at));
+  t.plan.sort((a, b) => a.day.localeCompare(b.day) || a.created_at.localeCompare(b.created_at));
   t.members.sort((a, b) => a.created_at.localeCompare(b.created_at));
   t.expenses.sort((a, b) => b.spent_on.localeCompare(a.spent_on) || b.created_at.localeCompare(a.created_at));
   t.payments.sort((a, b) => b.paid_on.localeCompare(a.paid_on) || b.created_at.localeCompare(a.created_at));
@@ -253,8 +263,28 @@ async function execute(op) {
       return (await supabase.from('plan_items').upsert(a.item, ignore)).error;
     case 'updatePlan':
       return (await supabase.from('plan_items').update(a.patch).eq('id', a.id)).error;
-    case 'deletePlan':
-      return (await supabase.from('plan_items').delete().eq('id', a.id)).error;
+    case 'deletePlan': {
+      const r = await supabase.from('plan_items').delete().eq('id', a.id);
+      if (r.error) return r.error;
+      if (a.photo_path) {
+        await supabase.storage.from('bills').remove([a.photo_path]);
+        deleteBlob(a.photo_path);
+      }
+      return null;
+    }
+    case 'uploadPlanPhoto': {
+      const blob = await getBlob(a.path);
+      if (!blob) return { message: 'The photo is no longer on this phone.', code: 'LOCAL' };
+      const up = await supabase.storage.from('bills').upload(a.path, blob, { contentType: 'image/jpeg', upsert: true });
+      if (up.error) return up.error;
+      return (await supabase.from('plan_items').update({ photo_path: a.path }).eq('id', a.item_id)).error;
+    }
+    case 'removePlanPhoto': {
+      const r = await supabase.storage.from('bills').remove([a.path]);
+      if (r.error && isNetworkError(r.error)) return r.error;
+      deleteBlob(a.path);
+      return (await supabase.from('plan_items').update({ photo_path: null }).eq('id', a.item_id).eq('photo_path', a.path)).error;
+    }
     case 'uploadBill': {
       const blob = await getBlob(a.path);
       if (!blob) return { message: 'The photo is no longer on this phone.', code: 'LOCAL' };
@@ -554,9 +584,10 @@ export function removeBill(tripId, expenseId, path) {
 }
 
 // ---------- Trip plan (day-wise) ----------
-export function addPlanItem({ trip_id, day, time, title, notes }) {
-  const item = { id: newId(), trip_id, day, time: time || null, title, notes: notes || null, done: false, created_at: now() };
+export function addPlanItem({ trip_id, day, title, notes }) {
+  const item = { id: newId(), trip_id, day, title, notes: notes || null, done: false, created_at: now() };
   enqueue('addPlan', trip_id, `Add plan "${title}"`, { item });
+  return item.id;
 }
 
 // patch: { day?, time?, title?, notes?, done? }
@@ -565,5 +596,16 @@ export function updatePlanItem(tripId, id, patch) {
 }
 
 export function deletePlanItem(tripId, item) {
-  enqueue('deletePlan', tripId, `Delete plan "${item.title}"`, { trip_id: tripId, id: item.id });
+  enqueue('deletePlan', tripId, `Delete plan "${item.title}"`, { trip_id: tripId, id: item.id, photo_path: item.photo_path ?? null });
+}
+
+// Save a plan photo on the phone and queue it for upload (same storage as bill photos)
+export async function attachPlanPhoto(tripId, itemId, blob) {
+  const path = `${userId}/${tripId}/plan-${itemId}-${Date.now()}.jpg`;
+  await putBlob(path, blob);
+  enqueue('uploadPlanPhoto', tripId, 'Upload plan photo', { trip_id: tripId, item_id: itemId, path });
+}
+
+export function removePlanPhoto(tripId, itemId, path) {
+  enqueue('removePlanPhoto', tripId, 'Remove plan photo', { trip_id: tripId, item_id: itemId, path });
 }

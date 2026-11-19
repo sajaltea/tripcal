@@ -252,13 +252,14 @@ create table if not exists public.plan_items (
   id          uuid primary key default gen_random_uuid(),
   trip_id     uuid not null references public.trips(id) on delete cascade,
   day         date not null,
-  time        text,                 -- optional, e.g. '07:30'
   title       text not null check (length(trim(title)) > 0),
   notes       text,
+  photo_path  text,                 -- optional photo in the bills storage bucket
   done        boolean not null default false,
   created_at  timestamptz not null default now()
 );
 create index if not exists plan_items_trip_idx on public.plan_items (trip_id, day);
+alter table public.plan_items add column if not exists photo_path text;
 
 alter table public.plan_items enable row level security;
 
