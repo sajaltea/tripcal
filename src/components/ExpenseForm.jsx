@@ -123,16 +123,22 @@ export default function ExpenseForm({ trip, members, expense, onDone }) {
         <input required value={f.description} onChange={set('description')} placeholder="Dinner, taxi, hotel…" />
       </label>
 
-      <div className="grid2">
-        <label>Paid by
-          <select value={f.paidBy} onChange={set('paidBy')}>
-            {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-          </select>
-        </label>
-        <label>Date
-          <input type="date" value={f.spentOn} onChange={set('spentOn')} />
-        </label>
+      <div>
+        <div className="field-label">Who paid?</div>
+        <div className="chips" role="radiogroup" aria-label="Who paid">
+          {members.map((m) => (
+            <button type="button" key={m.id} role="radio" aria-checked={f.paidBy === m.id}
+              className={f.paidBy === m.id ? 'chip payer on' : 'chip payer'}
+              onClick={() => setF({ ...f, paidBy: m.id })}>
+              {m.name}
+            </button>
+          ))}
+        </div>
       </div>
+
+      <label>Date
+        <input type="date" value={f.spentOn} onChange={set('spentOn')} />
+      </label>
 
       <div>
         <div className="row between">

@@ -718,3 +718,10 @@ input:focus, select:focus, textarea:focus {
 }
 .plan-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .plan-thumb.bill-placeholder { min-height: 0; padding: 0; cursor: default; }
+
+/* "Who paid?" buttons in the expense form */
+.chip.payer { font: inherit; font-size: var(--fs-md); font-weight: 500; display: inline-flex; }
+.chip.payer.on { font-weight: 600; }
+
+/* People tab: let the money details wrap instead of being cut off */
+.people-sub { white-space: normal !important; }
