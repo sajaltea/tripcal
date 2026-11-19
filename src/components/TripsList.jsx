@@ -39,7 +39,7 @@ function readTab() {
 
 export default function TripsList() {
   const navigate = useNavigate();
-  const { trips, loaded, status, userEmail } = useStore();
+  const { trips, loaded, status, userEmail, settings } = useStore();
   const [tab, setTabState] = useState(readTab);
   const [formError, setFormError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -180,7 +180,7 @@ This removes all ${n} expense${n === 1 ? '' : 's'}, payments, plan and photos fo
                   </div>
                   <span className="chev"><Icon name="chevron" size={18} /></span>
                 </Link>
-                {tab === 'mine' && (
+                {tab === 'mine' && settings.allowEdit && (
                   <button className="trip-delete" onClick={() => removeTrip(t)} aria-label={`Delete trip ${t.name}`} title="Delete trip">
                     <Icon name="trash" size={16} />
                   </button>

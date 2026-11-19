@@ -140,11 +140,12 @@ export default function PeopleTab({ trip, members, balances, setError, deleteTri
 
       {!readOnly && (
         <div className="danger-zone">
-          <button className="btn danger block" onClick={deleteTrip}>
-            <Icon name="trash" size={16} /> Delete this trip
-          </button>
-          {!canEdit && (
-            <p className="hint center mt-sm">To remove people, turn on “Allow edit &amp; delete” in Settings.</p>
+          {canEdit ? (
+            <button className="btn danger block" onClick={deleteTrip}>
+              <Icon name="trash" size={16} /> Delete this trip
+            </button>
+          ) : (
+            <p className="lock-note"><Icon name="lock" size={16} /> Remove and delete are off. Turn them on in Settings.</p>
           )}
         </div>
       )}
