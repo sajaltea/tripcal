@@ -50,4 +50,4 @@ drop policy if exists "bills read shared" on storage.objects;
 create policy "bills read shared" on storage.objects for select to authenticated
   using (bucket_id = 'bills' and exists (
     select 1 from public.trips t
-    where t.id::text = (storage.foldername(name))[2] and public.can_view_trip(t.id)));
+    where t.id::text = (storage.foldername(objects.name))[2] and public.can_view_trip(t.id)));

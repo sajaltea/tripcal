@@ -48,3 +48,11 @@ create policy "bills change own" on storage.objects for update to authenticated
   using (bucket_id = 'bills' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "bills delete own" on storage.objects for delete to authenticated
   using (bucket_id = 'bills' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Shared people can see the trip's photos (bills/<user id>/<trip id>/...).
+-- "objects.name" must be written out in full: a bare "name" would point at the trip's name.
+drop policy if exists "bills read shared" on storage.objects;
+create policy "bills read shared" on storage.objects for select to authenticated
+  using (bucket_id = 'bills' and exists (
+    select 1 from public.trips t
+    where t.id::text = (storage.foldername(objects.name))[2] and public.can_view_trip(t.id)));
